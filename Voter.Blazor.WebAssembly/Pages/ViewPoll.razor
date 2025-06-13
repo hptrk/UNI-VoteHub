@@ -1,0 +1,144 @@
+@page "/polls/{PollId:int}"
+@using Voter.Shared.Models
+@using Voter.Blazor.WebAssembly.Services
+@attribute [Authorize]
+@inject IPollService PollService
+@inject NavigationManager NavigationManager
+
+<PageTitle>View Poll - VoteHub</PageTitle>
+
+@if (loading)
+{
+    <div class="d-flex justify-content-center mt-4">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger mt-3" role="alert">
+        @error
+    </div>
+    <button class="btn btn-secondary" @onclick="GoBack">Back</button>
+}
+else if (poll != null)
+{
+    <div class="card mt-3">
+        <div class="card-header bg-primary text-white">
+            <h3>@poll.Question</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p><strong>Start Date:</strong> @poll.StartDate.ToShortDateString()</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>End Date:</strong> @poll.EndDate.ToShortDateString()</p>
+                </div>
+            </div>
+
+            <h4 class="mb-3">Options</h4>
+            <div class="list-group mb-4">
+                @foreach (var option in poll.Options)
+                {
+                    <div class="list-group-item @(option.UserVoted ? "list-group-item-primary" : "")">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>@option.Text</span>
+                            @if (option.UserVoted)
+                            {
+                                <span class="badge bg-primary">Your vote</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (voters != null && voters.Any())
+            {
+                <h4 class="mb-3">Participants</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var voter in voters)
+                            {
+                                <tr>
+                                    <td>@voter.Username</td>
+                                    <td>@voter.Email</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    No participants yet.
+                </div>
+            }
+
+            <div class="mt-4">
+                <button class="btn btn-primary me-2" @onclick="GoBack">Back</button>
+                <a href="@($"/polls/{PollId}/results")" class="btn btn-outline-primary">View Results</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int PollId { get; set; }
+
+    private PollDTO? poll;
+    private List<UserDTO>? voters;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadPoll();
+    }
+
+    private async Task LoadPoll()
+    {
+        try
+        {
+            loading = true;
+            poll = await PollService.GetPollByIdAsync(PollId);
+            await LoadVoters();
+        }
+        catch (Exception ex)
+        {
+            error = $"Error loading poll: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task LoadVoters()
+    {
+        try
+        {
+            voters = await PollService.GetPollVotersAsync(PollId);
+        }
+        catch (Exception)
+        {
+            // Just show empty list if we can't load voters
+            voters = new List<UserDTO>();
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/polls/active");
+    }
+}

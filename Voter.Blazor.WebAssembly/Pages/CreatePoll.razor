@@ -1,0 +1,147 @@
+@page "/polls/create"
+@using System.ComponentModel.DataAnnotations
+@using Voter.Blazor.WebAssembly.ViewModels
+@using Voter.Blazor.WebAssembly.Services
+@attribute [Authorize]
+@inject IPollService PollService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Create Poll - VoteHub</PageTitle>
+
+<h3>Create New Poll</h3>
+
+<div class="card mt-4">
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger" role="alert">
+                @error
+            </div>
+        }          <EditForm Model="@viewModel" OnValidSubmit="SubmitCreatePollForm">
+            <DataAnnotationsValidator />
+            
+            <div class="mb-3">
+                <label for="question" class="form-label">Question</label>
+                <InputText id="question" @bind-Value="viewModel.Question" class="form-control" />
+                <ValidationMessage For="@(() => viewModel.Question)" />
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <InputDate id="startDate" @bind-Value="viewModel.StartDate" class="form-control" />
+                    <ValidationMessage For="@(() => viewModel.StartDate)" />
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <InputDate id="endDate" @bind-Value="viewModel.EndDate" class="form-control" />
+                    <ValidationMessage For="@(() => viewModel.EndDate)" />
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Poll Options</label>
+                @for (int i = 0; i < viewModel.Options.Count; i++)
+                {
+                    var optionIndex = i;
+                    <div class="input-group mb-2">
+                        <InputText @bind-Value="viewModel.Options[optionIndex]" class="form-control" placeholder="Option text" />
+                        @if (viewModel.Options.Count > 2)
+                        {
+                            <button type="button" class="btn btn-outline-danger" @onclick="() => RemoveOption(optionIndex)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        }
+                    </div>
+                }
+                @if (viewModel.Options.Count < 10)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="AddOption">
+                        <i class="bi bi-plus-circle"></i> Add Option
+                    </button>
+                }
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="ms-2">Creating Poll...</span>
+                    }
+                    else
+                    {
+                        <span>Create Poll</span>
+                    }
+                </button>
+                <a href="/home" class="btn btn-secondary">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private CreatePollViewModel viewModel = new CreatePollViewModel();
+    private bool isSubmitting = false;
+    private string error = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // Initialize with 2 options
+        viewModel.Options = new List<string> { "", "" };
+        viewModel.StartDate = DateTime.Today;
+        viewModel.EndDate = DateTime.Today.AddDays(7);
+    }
+
+    private void AddOption()
+    {
+        if (viewModel.Options.Count < 10)
+        {
+            viewModel.Options.Add("");
+        }
+    }
+    
+    private void RemoveOption(int index)
+    {
+        if (viewModel.Options.Count > 2 && index >= 0 && index < viewModel.Options.Count)
+        {
+            viewModel.Options.RemoveAt(index);
+        }
+    }
+
+    private async Task SubmitCreatePollForm()
+    {
+        // additional validation
+        if (viewModel.Options.Any(string.IsNullOrWhiteSpace))
+        {
+            error = "All options must have a value";
+            return;
+        }
+
+        if (viewModel.StartDate > viewModel.EndDate)
+        {
+            error = "End date must be after start date";
+            return;
+        }
+
+        try
+        {
+            isSubmitting = true;
+            error = string.Empty;
+            
+            await PollService.CreatePollAsync(viewModel);
+            await JSRuntime.InvokeVoidAsync("alert", "Poll created successfully");
+            NavigationManager.NavigateTo("/polls/active");
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to create poll: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

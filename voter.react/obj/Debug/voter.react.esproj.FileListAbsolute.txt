@@ -1,0 +1,3 @@
+T:\egyetem\4. felev\dotnet\beadando\voter\Voter.React\obj\Debug\voter.react.esproj.CoreCompileInputs.cache
+T:\egyetem\4. felev\dotnet\javitas\CJJ14N (4)\Voter.React\obj\Debug\voter.react.esproj.CoreCompileInputs.cache
+T:\egyetem\4. felev\dotnet\javitas\CJJ14N\Voter.React\obj\Debug\voter.react.esproj.CoreCompileInputs.cache

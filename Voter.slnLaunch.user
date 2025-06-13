@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Web API + Blazor",
+    "Projects": [
+      {
+        "Path": "Voter.WebAPI\\Voter.WebAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Voter.Blazor.WebAssembly\\Voter.Blazor.WebAssembly.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
